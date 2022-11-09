@@ -18,11 +18,6 @@ export const buildInNoEscapeExtensionTags: string[] = [
 	'ref',
 	'references',
 	'poem',
-	'<categorytree>',
-	'<section>',
-	'<math>',
-	'<ce>',
-	'<chem>',
-	'<maplink>',
-	'<mapframe>'
+	'section',
+	'<math>
 ];

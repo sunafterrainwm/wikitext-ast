@@ -11,7 +11,13 @@
  *     The PPNode::split*() functions, which provide metadata about certain types of tree node
  *
  */
-export abstract class PPNode {
+export abstract class PPNode<T> {
+	public value: T;
+	
+	public constructor(public store: PPNode[], public index: number) {
+		this.value = store[index];
+	}
+
 	/**
 	 * Get an array-type node containing the children of this node.
 	 * Returns false if this is not a tree node.
