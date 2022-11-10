@@ -21,7 +21,7 @@ export interface PPDStackElementOptions {
 	/**
 	 * Start offset of this element in the source wikitext
 	 */
-	startPos: number;
+	startPos?: number;
 
 	/**
 	 * Number of opening characters found (number of "=" for heading)
@@ -31,7 +31,7 @@ export interface PPDStackElementOptions {
 	/**
 	 * Array of PPDPart objects describing pipe-separated parts.
 	 */
-	parts: PPDPart[];
+	parts?: PPDPart[];
 
 	/**
 	 * True if the open char appeared at the start of the input line.
@@ -134,11 +134,11 @@ export class PPDStackElement implements PPDStackElementOptions {
 	 * @param {number | false} openingCount
 	 * @return {Array}
 	 */
-	public breakSyntax(openingCount: number | false = false): string[] {
-		let accum: string[];
+	public breakSyntax(openingCount: number | false = false): RawPPNodeStore {
+		let accum: RawPPNodeStore;
 		if (this.open === '\n') {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			accum = [this.savedPrefix].concat(this.parts[0]!.out);
+			accum = [this.savedPrefix, ...this.parts[0]!.out];
 		} else {
 			if (openingCount === false) {
 				openingCount = this.count;
@@ -152,14 +152,14 @@ export class PPDStackElement implements PPDStackElementOptions {
 				if (first) {
 					first = false;
 				} else if (typeof accum[lastIndex] === 'string') {
-					accum[lastIndex] += '|';
+					(accum[lastIndex] as string) += '|';
 				} else {
 					accum[++lastIndex] = '|';
 				}
 
 				for (const node of part.out) {
 					if (typeof node === 'string' && typeof accum[lastIndex] === 'string') {
-						accum[lastIndex] += node;
+						(accum[lastIndex] as string) += node;
 					} else {
 						accum[++lastIndex] = node;
 					}

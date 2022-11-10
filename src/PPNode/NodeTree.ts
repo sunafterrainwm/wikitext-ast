@@ -365,3 +365,8 @@ export class NodeTree extends SiblingPPNode {
 		return bits as SplitTemplateObj;
 	}
 }
+
+// override in here because of circular reference
+SiblingPPNode.prototype.getNextSibling = function (this: SiblingPPNode) {
+	return NodeTree.factory(this.store, this.index + 1);
+};

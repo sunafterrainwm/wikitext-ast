@@ -22,7 +22,7 @@ export class NodeText extends SiblingPPNode {
 	}
 
 	public override toString(): string {
-		return htmlSpecialChars(this.value, HtmlSpecialCharsOption.Compat);
+		return '<text>' + htmlSpecialChars(this.value, HtmlSpecialCharsOption.Compat) + '</text>';
 	}
 
 	public override getName(): '#text' {

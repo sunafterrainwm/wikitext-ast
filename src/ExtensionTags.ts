@@ -18,6 +18,5 @@ export const buildInNoEscapeExtensionTags: string[] = [
 	'ref',
 	'references',
 	'poem',
-	'section',
-	'<math>
+	'section'
 ];

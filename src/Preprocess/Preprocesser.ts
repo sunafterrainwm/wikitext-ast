@@ -1,17 +1,17 @@
 import assert = require('assert');
 
-import php = require('locutus/php');
 import XRegExp = require('xregexp');
 
+import { strspn, strcspn } from '../lib/php';
 import { ParsedParseOptions } from '../models/ParseOptions';
 import { NodeArray } from '../PPNode/NodeArray';
 import { NodeTree } from '../PPNode/NodeTree';
 import { PPDPart } from '../PPNode/PPDPart';
 import { PPDStack } from '../PPNode/PPDStack';
 import { PPDStackElement, PPDStackElementOptions } from '../PPNode/PPDStackElement';
-import { RawPPNodeStore } from '../PPNode/PPNode';
+import { RawPPNode, RawPPNodeStore } from '../PPNode/PPNode';
 
-import { Rule, rules } from './rule';
+import { Rule, RuleKey, rules } from './rule';
 
 export interface PreprocessorOptions {
 	/** Transclusion mode flag for Preprocessor::preprocessToObj() */
@@ -43,6 +43,7 @@ export class Preprocessor {
 	}
 
 	public static addLiteral(accum: RawPPNodeStore, text: string): void {
+		console.log('literal add: ' + text);
 		let last = accum.pop();
 		if (last !== undefined) {
 			if (typeof last === 'string') {
@@ -56,8 +57,8 @@ export class Preprocessor {
 		}
 	}
 
-	public preprocessToObj(text: string): NodeArray {
-		return new NodeArray(this.buildDomTreeArrayFromText(text), 0);
+	public preprocessToObj(text: string): NodeTree {
+		return new NodeTree(this.buildDomTreeArrayFromText(text), 0);
 	}
 
 	protected buildDomTreeArrayFromText(text: string): RawPPNodeStore {
@@ -108,11 +109,14 @@ export class Preprocessor {
 		let matches: XRegExp.ExecArray | null;
 		let inner: string | undefined;
 		let attr: string;
-		let piece: PPDStackElementOptions;
+		let piece: PPDStackElement | PPDStackElementOptions;
 		let wsLength: number;
 		let part: PPDPart;
 		let count: number;
 		let element: RawPPNodeStore;
+		let curLen: number;
+		let rule: Rule;
+		let matchingCount: number;
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		while (true) {
 			// Ignore all input up to the next <onlyinclude>
@@ -150,8 +154,7 @@ export class Preprocessor {
 				if (findEquals) {
 					search += '=';
 				}
-				let rule: Rule;
-				const literalLength = php.strings.strcspn(text, search, i) as number;
+				const literalLength = strcspn(text, search, i);
 				if (literalLength > 0) {
 					Preprocessor.addLiteral(accum, text.slice(i, i + literalLength));
 					i += literalLength;
@@ -248,15 +251,15 @@ export class Preprocessor {
 					// the overall start. That's not how Sanitizer::removeHTMLcomments() did it, but
 					// it's a possible beneficial b/c break.
 					} else {
-						const wsStart = i ? i - php.strings.strspn(revText, ' \t', lengthText - i) : 0;
-						let wsEnd: number = endPos + 2 + (php.strings.strspn(text, ' \t', endPos + 3) as number);
+						const wsStart = i ? i - strspn(revText, ' \t', lengthText - i) : 0;
+						let wsEnd: number = endPos + 2 + (strspn(text, ' \t', endPos + 3));
 						const comments: Array<[number, number]> = [[wsStart, wsEnd]];
 						while (text.slice(wsEnd + 1, wsEnd + 5) === '<!--') {
 							let c = text.indexOf('-->', wsEnd + 4);
 							if (c === -1) {
 								break;
 							}
-							c = c + 2 + (php.strings.strspn(text, ' \t', c + 3) as number);
+							c = c + 2 + (strspn(text, ' \t', c + 3));
 							comments.push([wsEnd + 1, c]);
 							wsEnd = c;
 						}
@@ -269,7 +272,7 @@ export class Preprocessor {
 								if (
 									wsLength > 0 &&
 									typeof temp === 'string' &&
-									php.strings.strspn(temp, ' \t', -wsLength) === wsLength
+									strspn(temp, ' \t', -wsLength) === wsLength
 								) {
 									temp = temp.slice(0, -wsLength);
 								}
@@ -332,8 +335,8 @@ export class Preprocessor {
 					matches = XRegExp.exec(text, tmpRegExp, tagEndPos + 1);
 					if (!noMoreClosingTag[name] && matches) {
 						inner = text.slice(tagEndPos + 1, (tmpRegExp.lastIndex - 1) - 1);
-						i = (tmpRegExp.lastIndex - 1) + matches[0].length;
-						close = matches[0][0];
+						i = (tmpRegExp.lastIndex - 1) + String(matches[0]).length;
+						close = matches[0];
 					// No end tag
 					} else {
 						// Let it run out to the end of the text.
@@ -345,6 +348,7 @@ export class Preprocessor {
 						// Cache results, otherwise we have O(N^2) performance for input like <foo><foo><foo>...
 						} else {
 							i = tagEndPos + 1;
+							console.log('hi1.');
 							Preprocessor.addLiteral(accum, text.slice(tagStartPos, tagEndPos + 1));
 							noMoreClosingTag[name] = true;
 							continue;
@@ -377,10 +381,11 @@ export class Preprocessor {
 				if (fakeLineStart) {
 					fakeLineStart = false;
 				} else {
+					console.log('hi3.');
 					Preprocessor.addLiteral(accum, curChar);
 					i++;
 				}
-				const count = php.strings.strspn(text, '=', i, Math.min(text.length, 6)) as number;
+				const count = strspn(text, '=', i, Math.min(text.length, 6));
 				// DWIM: This looks kind of like a name/value separator.
 				// Let's let the equals handler have it and break the potential
 				// heading. This is heuristic, but AFAICT the methods for
@@ -397,16 +402,7 @@ export class Preprocessor {
 					};
 					stack.push(piece);
 					accum = stack.getAccum();
-					const stackFlags = stack.getFlags();
-					if (stackFlags.findEquals) {
-						findEquals = stackFlags.findEquals;
-					}
-					if (stackFlags.findPipe) {
-						findPipe = stackFlags.findPipe;
-					}
-					if (stackFlags.inHeading) {
-						inHeading = stackFlags.inHeading;
-					}
+					({ findEquals, findPipe, inHeading } = stack.getFlags());
 					i += count;
 				}
 			// A heading must be open, otherwise \n wouldn't have been in the search list
@@ -424,17 +420,17 @@ export class Preprocessor {
 				piece = (stack.top as PPDStackElement);
 				assert(piece.open === '\n');
 				part = (piece as PPDStackElement).getCurrentPart();
-				wsLength = php.strings.strspn(revText, ' \t', lengthText - i) as number;
+				wsLength = strspn(revText, ' \t', lengthText - i);
 				let searchStart = i - wsLength;
 				// Comment found at line end
 				// Search for equals signs before the comment
 				if (searchStart - 1 === part.commentEnd) {
 					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 					searchStart = part.visualEnd!;
-					searchStart -= php.strings.strspn(revText, ' \t', lengthText - searchStart) as number;
+					searchStart -= strspn(revText, ' \t', lengthText - searchStart);
 				}
 				count = piece.count;
-				const equalsLength = php.strings.strspn(revText, '=', lengthText - searchStart) as number;
+				const equalsLength = strspn(revText, '=', lengthText - searchStart);
 				if (equalsLength > 0) {
 					// This is just a single string of equals signs on its own line
 					// Replicate the doHeadings behavior /={count}(.+)={count}/
@@ -456,151 +452,120 @@ export class Preprocessor {
 					} else {
 						element = accum;
 					}
-				} else
 				// No match, no <h>, just pass down the inner text
-				{
+				} else {
 					element = accum;
 				}
 				stack.pop();
 				accum = stack.getAccum();
-				stackFlags = stack.getFlags();
-				if (undefined !== stackFlags.findEquals) {
-					findEquals = stackFlags.findEquals;
-				}
-				if (undefined !== stackFlags.findPipe) {
-					findPipe = stackFlags.findPipe;
-				}
-				if (undefined !== stackFlags.inHeading) {
-					inHeading = stackFlags.inHeading;
-				}
-				accum.splice(count(accum), 0, element);
-			} else if (found == 'open')
+				({ findEquals, findPipe, inHeading } = stack.getFlags());
+				accum.push(...element);
 			// count opening brace characters
-			{
-				var curLen = curChar.length;
-				count = curLen > 1 ? strspn(text, curChar[curLen - 1], i + 1) + 1 : strspn(text, curChar, i);
+			} else if (found === 'open') {
+				curLen = curChar.length;
+				count = curLen > 1 ? strspn(text, curChar.charAt(curLen - 1), i + 1) + 1 : strspn(text, curChar, i);
 				let savedPrefix = '';
-				const lineStart = i > 0 && text[i - 1] == '\n';
-				if (curChar === '-{' && count > curLen)
+				const lineStart = i > 0 && text[i - 1] === '\n';
 				// -{ => {{ transition because rightmost wins
-				{
+				if (curChar === '-{' && count > curLen) {
 					savedPrefix = '-';
 					i++;
 					curChar = '{';
 					count--;
-					rule = this.rules[curChar];
+					rule = rules[curChar as '-{'];
 				}
-				if (count >= rule.min)
 				// Add it to the stack
-				{
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+				if (count >= rule!.min) {
 					piece = {
 						open: curChar,
-						close: rule.end,
+						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						close: rule!.end,
 						savedPrefix,
 						count,
 						lineStart
 					};
 					stack.push(piece);
 					accum = stack.getAccum();
-					stackFlags = stack.getFlags();
-					if (undefined !== stackFlags.findEquals) {
-						findEquals = stackFlags.findEquals;
-					}
-					if (undefined !== stackFlags.findPipe) {
-						findPipe = stackFlags.findPipe;
-					}
-					if (undefined !== stackFlags.inHeading) {
-						inHeading = stackFlags.inHeading;
-					}
-				} else
+					({ findEquals, findPipe, inHeading } = stack.getFlags());
 				// Add literal brace(s)
-				{
-					Preprocessor_Hash.addLiteral(accum, savedPrefix + str_repeat(curChar, count));
+				} else if (savedPrefix || count) {
+					console.log('hi4.');
+					Preprocessor.addLiteral(accum, savedPrefix + curChar.repeat(count));
+				} else {
+					console.log('curChar: ' + String(curChar) + ', text+: ' + String(text.slice(i - 2, i + 10)) + ', savedPrefix: ' + String(savedPrefix) + ', count: ' + String(count));
 				}
 				i += count;
-			} else if (found == 'close')
-			// @var PPDStackElement_Hash $piece
 
 			// lets check if there are enough characters for closing brace
-
 			// check for maximum matching characters (if there are 5 closing
 			// characters, we will probably need only 3 - depending on the rules)
-
 			// Advance input pointer
-
 			// Unwind the stack
-
 			// Re-add the old stack element if it still has unmatched opening characters remaining
-			{
-				piece = stack.top;
-				'@phan-var PPDStackElement_Hash $piece';
+			} else if (found === 'close') {
+				piece = stack.top as PPDStackElement;
 				let maxCount = piece.count;
-				if (piece.close === '}-' && curChar === '}')
 				// don't try to match closing '-' as a '}'
-				{
+				if (piece.close === '}-' && curChar === '}') {
 					maxCount--;
 				}
 				curLen = curChar.length;
 				count = curLen > 1 ? curLen : strspn(text, curChar, i, maxCount);
-				rule = this.rules[piece.open];
-				if (count > rule.max)
+				rule = rules[piece.open as RuleKey];
 				// The specified maximum exists in the callback array, unless the caller
 				// has made an error
-				{
-					var matchingCount = rule.max;
-				} else
+				if (count > rule.max) {
+					matchingCount = rule.max;
 				// Count is less than the maximum
 				// Skip any gaps in the callback array to find the true largest match
 				// Need to use array_key_exists not isset because the callback can be null
-				{
+				} else {
 					matchingCount = count;
-					while (matchingCount > 0 && !(matchingCount in rule.names)) {
+					while (matchingCount > 0 && rule.names[matchingCount] === undefined) {
 						--matchingCount;
 					}
 				}
-				if (matchingCount <= 0)
 				// No matching element found in callback array
 				// Output a literal closing brace and continue
-				{
-					var endText = text.substr(i, count);
-					Preprocessor_Hash.addLiteral(accum, endText);
+				if (matchingCount <= 0) {
+					console.log('text+: ' + text.slice(i - 2, i + 10) + ', curChar: ' + curChar + ', maxCount: ' + String(maxCount));
+					Preprocessor.addLiteral(accum, text.slice(i, count + i));
 					i += count;
 					continue;
 				}
-				name = rule.names[matchingCount];
-				if (name === undefined)
+				const name = rule.names[matchingCount];
 				// No element, just literal text
-				{
-					endText = text.substr(i, matchingCount);
-					element = piece.breakSyntax(matchingCount);
-					Preprocessor_Hash.addLiteral(element, endText);
-				} else
+				if (name === null) {
+					element = (piece as PPDStackElement).breakSyntax(matchingCount);
+					Preprocessor.addLiteral(element, text.slice(i, i + matchingCount));
 				// Create XML element
-
 				// The invocation is at the start of the line if lineStart is set in
 				// the stack, and all opening brackets are used up.
-				{
-					const parts = piece.parts;
-					const titleAccum = parts[0].out;
+				} else if (name) {
+					const parts = (piece as PPDStackElement).parts;
+					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					const titleAccum = parts[0]!.out;
 					delete parts[0];
-					children = [];
-					if (maxCount == matchingCount && !!piece.lineStart && piece.savedPrefix.length == 0) {
-						children.push(['@lineStart', [1]]);
+					const children: RawPPNodeStore = [];
+					if (maxCount === matchingCount && !!piece.lineStart && (piece as PPDStackElement).savedPrefix.length === 0) {
+						children.push(['@lineStart', ['1']]);
 					}
-					const titleNode = ['title', titleAccum];
+					const titleNode: RawPPNode = ['title', titleAccum];
 					children.push(titleNode);
 					let argIndex = 1;
 					for (const part of Object.values(parts)) {
-						if (undefined !== part.eqpos) {
-							const equalsNode = part.out[part.eqpos];
-							var nameNode = ['name', part.out.slice(0, part.eqpos)];
-							var valueNode = ['value', part.out.slice(part.eqpos + 1)];
-							var partNode = ['part', [nameNode, equalsNode, valueNode]];
+						if (part.eqpos !== undefined) {
+							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+							const equalsNode: RawPPNode = part.out[part.eqpos]!;
+							const nameNode: RawPPNode = ['name', part.out.slice(0, part.eqpos)];
+							const valueNode: RawPPNode = ['value', part.out.slice(part.eqpos + 1)];
+							const partNode: RawPPNode = ['part', [nameNode, equalsNode, valueNode]];
 							children.push(partNode);
 						} else {
-							nameNode = ['name', [['@index', [argIndex++]]]];
-							valueNode = ['value', part.out];
-							partNode = ['part', [nameNode, valueNode]];
+							const nameNode: RawPPNode = ['name', [['@index', [String(argIndex++)]]]];
+							const valueNode: RawPPNode = ['value', part.out];
+							const partNode: RawPPNode = ['part', [nameNode, valueNode]];
 							children.push(partNode);
 						}
 					}
@@ -609,41 +574,32 @@ export class Preprocessor {
 				i += matchingCount;
 				stack.pop();
 				accum = stack.getAccum();
-				if (matchingCount < piece.count)
 				// do we still qualify for any callback with remaining count?
-				{
-					piece.parts = [new PPDPart_Hash()];
+				if (matchingCount < piece.count) {
+					piece.parts = [new PPDPart()];
 					piece.count -= matchingCount;
-					const min = this.rules[piece.open].min;
+					const min = rules[piece.open as RuleKey].min;
 					if (piece.count >= min) {
 						stack.push(piece);
 						accum = stack.getAccum();
-					} else if (piece.count == 1 && piece.open === '{' && piece.savedPrefix === '-') {
+					} else if (piece.count === 1 && piece.open === '{' && piece.savedPrefix === '-') {
 						piece.savedPrefix = '';
 						piece.open = '-{';
 						piece.count = 2;
-						piece.close = this.rules[piece.open].end;
+						piece.close = rules[piece.open as RuleKey].end;
 						stack.push(piece);
 						accum = stack.getAccum();
 					} else {
 						let s = piece.open.slice(0, 0);
-						s += str_repeat(piece.open.slice(-1), piece.count - s.length);
-						Preprocessor_Hash.addLiteral(accum, piece.savedPrefix + s);
+						s += piece.open.slice(-1).repeat(piece.count - s.length);
+						Preprocessor.addLiteral(accum, (piece as PPDStackElement).savedPrefix + s);
 					}
 				} else if (piece.savedPrefix !== '') {
-					Preprocessor_Hash.addLiteral(accum, piece.savedPrefix);
+					Preprocessor.addLiteral(accum, (piece as PPDStackElement).savedPrefix);
 				}
-				stackFlags = stack.getFlags();
-				if (undefined !== stackFlags.findEquals) {
-					findEquals = stackFlags.findEquals;
-				}
-				if (undefined !== stackFlags.findPipe) {
-					findPipe = stackFlags.findPipe;
-				}
-				if (undefined !== stackFlags.inHeading) {
-					inHeading = stackFlags.inHeading;
-				}
-				accum.splice(count(accum), 0, element);
+				({ findEquals, findPipe, inHeading } = stack.getFlags());
+				// @ts-expect-error TS2454
+				accum.push(...element);
 			// shortcut for getFlags()
 			} else if (found === 'pipe') {
 				findEquals = true;
@@ -659,7 +615,7 @@ export class Preprocessor {
 			}
 		}
 		for (const piece of stack.stack) {
-			stack.rootAccum.splice(stack.rootAccum.length, 0, ...piece.breakSyntax());
+			stack.rootAccum.push(...piece.breakSyntax());
 		}
 		for (const node of Object.values(stack.rootAccum)) {
 			if (Array.isArray(node) && node[NodeTree.NAME] === 'possible-h') {

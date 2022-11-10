@@ -1,4 +1,10 @@
-export type Rule = typeof rules[keyof typeof rules];
+export type RuleKey = keyof typeof rules;
+export interface Rule {
+	end: string;
+	names: Record<number, string | null>;
+	min: number;
+	max: number;
+}
 
 export const rules = {
 	'{': {
@@ -13,7 +19,7 @@ export const rules = {
 	'[': {
 		end: ']',
 		names: {
-			2: undefined
+			2: null
 		},
 		min: 2,
 		max: 2
@@ -21,7 +27,7 @@ export const rules = {
 	'-{': {
 		end: '}-',
 		names: {
-			2: undefined
+			2: null
 		},
 		min: 2,
 		max: 2

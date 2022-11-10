@@ -1,5 +1,3 @@
-import { NodeTree } from './NodeTree';
-
 /**
  * There are three types of nodes:
  *     Tree nodes, which have a name and contain other nodes as children
@@ -47,7 +45,10 @@ export abstract class SiblingPPNode extends PPNode {
 	 * @return {false|PPNode}
 	 */
 	public getNextSibling(): false | SiblingPPNode {
-		return NodeTree.factory(this.store, this.index + 1);
+		// This function is defined in NodeTree.ts
+		// because if importing NodeTree from NodeTree.ts to define this function,
+		// the circular reference will break something.
+		return false;
 	}
 }
 

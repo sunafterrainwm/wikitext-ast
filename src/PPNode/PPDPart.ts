@@ -1,8 +1,10 @@
+import { RawPPNodeStore } from './PPNode';
+
 export class PPDPart {
 	/**
 	 * Output accumulator
 	 */
-	public out: string[];
+	public out: RawPPNodeStore;
 
 	/**
 	 * Index of equals sign, if found

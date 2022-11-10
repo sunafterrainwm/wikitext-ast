@@ -4,12 +4,17 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "pnpm run lint",
 		"lint": "eslint src --ext .ts"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "MIT",
+	"packageManager": "pnpm@7.15.0",
+	"dependencies": {
+		"assert": "^2.0.0",
+		"xregexp": "^5.1.1"
+	},
 	"devDependencies": {
 		"@types/locutus": "^0.0.6",
 		"@types/node": "^18.11.9",
@@ -24,11 +29,5 @@
 		"eslint-plugin-promise": "^6.0.0",
 		"eslint-plugin-unicorn": "^44.0.2",
 		"typescript": "^4.8.4"
-	},
-	"dependencies": {
-		"assert": "^2.0.0",
-		"babel-preset-php": "^2.0.0",
-		"locutus": "^2.0.16",
-		"xregexp": "^5.1.1"
 	}
 }
