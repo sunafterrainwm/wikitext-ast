@@ -17,8 +17,8 @@ export class NodeAttr extends SiblingPPNode {
 	public constructor(store: RawPPNodeStore, index: number) {
 		super(store, index);
 		const descriptor = store[index];
-		if (descriptor === undefined || !descriptor[NodeTree.NAME].startsWith('@')) {
-			throw new Error('NodeAttr#constructor: invalid name in attribute descriptor');
+		if (descriptor === undefined || !Array.isArray(descriptor) || !descriptor[NodeTree.NAME].startsWith('@')) {
+			throw new Error('PPNode\\NodeAttr#constructor: invalid name in attribute descriptor');
 		}
 		this.name = descriptor[NodeTree.NAME].slice(1);
 		this.value = descriptor[NodeTree.CHILDREN][0] as string;

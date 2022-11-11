@@ -1,3 +1,5 @@
+import type { Point } from './PointedNodeText';
+
 /**
  * There are three types of nodes:
  *     Tree nodes, which have a name and contain other nodes as children
@@ -52,6 +54,6 @@ export abstract class SiblingPPNode extends PPNode {
 	}
 }
 
-export type RawPPNode = string | [ string, RawPPNodeStore ];
+export type RawPPNode = string | Point | [ string, RawPPNodeStore ];
 
 export type RawPPNodeStore = RawPPNode[];

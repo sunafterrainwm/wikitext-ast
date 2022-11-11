@@ -1,3 +1,4 @@
+import { mayPointGetText, Point } from './PointedNodeText';
 import { PPDPart } from './PPDPart';
 import { RawPPNodeStore } from './PPNode';
 
@@ -5,7 +6,7 @@ export interface PPDStackElementOptions {
 	/**
 	 * Opening character (\n for heading)
 	 */
-	open: string;
+	open: Point | string;
 
 	/**
 	 * Matching closing character
@@ -16,7 +17,7 @@ export interface PPDStackElementOptions {
 	 * Saved prefix that may affect later processing,
 	 *  e.g. to differentiate `-{{{{` and `{{{{` after later seeing `}}}`.
 	 */
-	savedPrefix?: string;
+	savedPrefix?: Point | string;
 
 	/**
 	 * Start offset of this element in the source wikitext
@@ -50,7 +51,7 @@ export class PPDStackElement implements PPDStackElementOptions {
 	/**
 	 * Opening character (\n for heading)
 	 */
-	public open!: string;
+	public open!: Point | string;
 
 	/**
 	 * Matching closing character
@@ -61,7 +62,7 @@ export class PPDStackElement implements PPDStackElementOptions {
 	 * Saved prefix that may affect later processing,
 	 *  e.g. to differentiate `-{{{{` and `{{{{` after later seeing `}}}`.
 	 */
-	public savedPrefix = '';
+	public savedPrefix: Point | string = '';
 
 	/**
 	 * Start offset of this element in the source wikitext
@@ -143,9 +144,9 @@ export class PPDStackElement implements PPDStackElementOptions {
 			if (openingCount === false) {
 				openingCount = this.count;
 			}
-			let s = this.open.slice(0, -1);
-			s += this.open.slice(-1).repeat(openingCount - s.length);
-			accum = [this.savedPrefix + s];
+			let s = mayPointGetText(this.open).slice(0, -1);
+			s += mayPointGetText(this.open).slice(-1).repeat(openingCount - s.length);
+			accum = [mayPointGetText(this.savedPrefix) + s];
 			let lastIndex = 0;
 			let first = true;
 			for (const part of this.parts) {

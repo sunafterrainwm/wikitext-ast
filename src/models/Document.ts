@@ -14,7 +14,7 @@ export class Document extends AbstractNode<true> implements IParentNode<Node> {
 
 	public constructor(rawContent: string, protected readonly rawOptions: ParseOptions) {
 		super(rawContent, undefined);
-		this.options = normalParseOptions(this, rawOptions);
+		this.options = normalParseOptions(rawOptions);
 		this.children = new NodeCollection();
 		if (rawContent !== '') {
 			this.children.push(new UnparsedWikitext(rawContent, this));

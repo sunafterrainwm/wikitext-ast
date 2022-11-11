@@ -1,6 +1,5 @@
+import { buildInNoEscapeExtensionTags } from '../ExtensionTags';
 import { ArrayAble } from '../util';
-
-import { Document } from './Document';
 
 export interface ExtensionTag {
 	name: string;
@@ -28,32 +27,36 @@ export function isExtensionTagOptionsSame(a: ExtensionTagOptions, b?: ExtensionT
 		: false;
 }
 
-const buildInExtensionTags: Record<string, ExtensionTagOptions> = {
-	nowiki: {
-		isEscapeTag: true
-	},
-	pre: {
-		isEscapeTag: true
-	}
-};
+const buildInExtensionTags: string[] = ['nowiki', 'pre'];
 
-export function normalParseOptions(root: Document, rawOptions: ParseOptions): ParsedParseOptions {
+export function normalParseOptions(rawOptions: ParseOptions): ParsedParseOptions {
 	const options: ParsedParseOptions = {
-		extraExtensionTags: new Map<string, ExtensionTagOptions>(Object.entries(buildInExtensionTags)),
+		extraExtensionTags: new Map<string, ExtensionTagOptions>(),
 		strict: !!rawOptions.strict
 	};
 
 	if (rawOptions.extraExtensionTags) {
-		Array.from(rawOptions.extraExtensionTags).map(function (item) {
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			return typeof item === 'string' ? { name: item, options: {} } as ExtensionTag : item;
+		Array.from(rawOptions.extraExtensionTags).concat(buildInExtensionTags).map(function (item) {
+			return (typeof item === 'string'
+				? {
+					name: item.toLowerCase(),
+					options: {
+						isEscapeTag: !buildInNoEscapeExtensionTags.includes(item)
+					}
+				}
+				: {
+					name: item.name.toLowerCase(),
+					options: item.options
+				}) as ExtensionTag;
 		}).forEach(function ({ name: tagName, options: tOptions }) {
+			if (!tagName.match(/^[a-z-]+$/) || ['includeonly', 'noinclude', 'onlyinclude'].includes(tagName)) {
+				throw new Error('Bad tagName: ' + JSON.stringify(tagName));
+			}
 			if (
 				options.extraExtensionTags.has(tagName) &&
 				!isExtensionTagOptionsSame(tOptions, options.extraExtensionTags.get(tagName))
 			) {
-				root.mayThrowError(new Error('Duplicate extension tag with difference option: ' + JSON.stringify(tagName)));
-				return;
+				throw new Error('Duplicate extension tag with difference option: ' + JSON.stringify(tagName));
 			}
 			options.extraExtensionTags.set(tagName, tOptions);
 		});

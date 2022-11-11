@@ -19,6 +19,8 @@
 		"@types/locutus": "^0.0.6",
 		"@types/node": "^18.11.9",
 		"@typescript-eslint/eslint-plugin": "^5.0.0",
+		"@typescript-eslint/parser": "^5.41.0",
+		"clean-stack": "^5.0.1",
 		"eslint": "^8.0.1",
 		"eslint-config-standard-with-typescript": "^23.0.0",
 		"eslint-import-resolver-typescript": "^3.5.2",

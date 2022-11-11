@@ -50,8 +50,8 @@ export function strcspn(string: string, mask: string, offset = 0, length = strin
 	let result = 0;
 	for (let i = offset; i < Math.min(string.length, offset + length); i++, result++) {
 		if (mask.includes(string.charAt(i))) {
-			break;
+			return result;
 		}
 	}
-	return result;
+	return length - offset;
 }

@@ -3,6 +3,7 @@ import { htmlSpecialChars, HtmlSpecialCharsOption } from '../util';
 import { NodeArray } from './NodeArray';
 import { NodeAttr } from './NodeAttr';
 import { NodeText } from './NodeText';
+import { Point, PointedNodeText } from './PointedNodeText';
 import { SiblingPPNode, PPNode, RawPPNodeStore } from './PPNode';
 
 export type AllSiblingPPNode = NodeTree | NodeAttr | NodeText;
@@ -99,6 +100,8 @@ export class NodeTree extends SiblingPPNode {
 			} else {
 				$class = NodeTree;
 			}
+		} else if (descriptor instanceof Point) {
+			$class = PointedNodeText;
 		} else {
 			throw new Error('NodeTree.factory: invalid node descriptor');
 		}
@@ -211,15 +214,16 @@ export class NodeTree extends SiblingPPNode {
 		const bits: Partial<SplitArgObj> = {};
 
 		children.forEach(function (child, i) {
-			if (!Array.isArray(child)) {
+			if (!Array.isArray(child) || child instanceof Point) {
 				return;
 			}
 
 			if (child[NodeTree.NAME] === 'name') {
 				bits.name = new NodeTree(children, i);
-				if (child[NodeTree.CHILDREN][0]?.[NodeTree.NAME] === '@index') {
+				const node = child[NodeTree.CHILDREN][0];
+				if (Array.isArray(node) && node[NodeTree.NAME] === '@index') {
 					// @ts-expect-error TS2322
-					bits.index = child[NodeTree.CHILDREN][0]?.[NodeTree.CHILDREN][0];
+					bits.index = node[NodeTree.CHILDREN][0];
 				}
 			} else if (child[NodeTree.NAME] === 'value') {
 				bits.value = new NodeTree(children, i);

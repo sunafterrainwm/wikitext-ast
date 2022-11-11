@@ -93,6 +93,12 @@
 				"pathGroups": []
 			}
 		],
+		"@typescript-eslint/no-unnecessary-condition": [
+			"error",
+			{
+				"allowConstantLoopConditions": true
+			}
+		],
 		"@typescript-eslint/space-before-function-paren": [
 			"error",
 			{

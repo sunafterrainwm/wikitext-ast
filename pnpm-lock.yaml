@@ -4,7 +4,9 @@ specifiers:
   '@types/locutus': ^0.0.6
   '@types/node': ^18.11.9
   '@typescript-eslint/eslint-plugin': ^5.0.0
+  '@typescript-eslint/parser': ^5.41.0
   assert: ^2.0.0
+  clean-stack: ^5.0.1
   eslint: ^8.0.1
   eslint-config-standard-with-typescript: ^23.0.0
   eslint-import-resolver-typescript: ^3.5.2
@@ -25,6 +27,8 @@ devDependencies:
   '@types/locutus': 0.0.6
   '@types/node': 18.11.9
   '@typescript-eslint/eslint-plugin': 5.41.0_huremdigmcnkianavgfk3x6iou
+  '@typescript-eslint/parser': 5.41.0_wyqvi574yv7oiwfeinomdzmc3m
+  clean-stack: 5.0.1
   eslint: 8.26.0
   eslint-config-standard-with-typescript: 23.0.0_q3drjx6wvxlcva2fd3sobxzcsi
   eslint-import-resolver-typescript: 3.5.2_mynvxvmq5qtyojffiqgev4x7mm
@@ -452,6 +456,13 @@ packages:
       escape-string-regexp: 1.0.5
     dev: true
 
+  /clean-stack/5.0.1:
+    resolution: {integrity: sha512-1FDmqRFlYUEuZJYwcofH5Oa9v/cjEdHekBMzKYN3W16A3BvleeV5fX5PqiQQNSifWx5aXAaHOS8zmlcZPmZmKA==}
+    engines: {node: '>=14.16'}
+    dependencies:
+      escape-string-regexp: 5.0.0
+    dev: true
+
   /color-convert/1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
     dependencies:
@@ -638,6 +649,11 @@ packages:
   /escape-string-regexp/4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
+    dev: true
+
+  /escape-string-regexp/5.0.0:
+    resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
+    engines: {node: '>=12'}
     dev: true
 
   /eslint-config-standard-with-typescript/23.0.0_q3drjx6wvxlcva2fd3sobxzcsi:
