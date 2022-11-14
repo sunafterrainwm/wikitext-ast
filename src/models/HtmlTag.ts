@@ -2,12 +2,12 @@ import { ArrayAble, pick } from '../util';
 
 import type { IParentNode } from './AbstractNode';
 import { AttrList } from './Attr';
-import { Document } from './Document';
+import type { IParser } from './IParser';
 import type { Node } from './Node';
 import { NodeCollection } from './NodeCollection';
 import { AttrAbleTag, ForceAddEndTag, PartialEndTag, PartialStartTag } from './Tag';
 
-const allowHtmlTagNames = [
+export const allowHtmlTagNames = [
 	'abbr', 'b', 'bdi', 'cite', 'code', 'dd', 'dfn', 'dt', 'em', 'i', 'kbd', 'mark',
 	'rp', 'rt', 'ruby', 's', 'samp', 'section', 'small', 'strong', 'sub', 'sup', 'u',
 	'var', 'wbr', 'data', 'div', 'dl', 'font', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -34,10 +34,10 @@ export class HtmlTag extends AttrAbleTag implements IParentNode<Node> {
 	public startTag: PartialStartTag;
 	public endTag: PartialEndTag;
 
-	public constructor(rawContent: string, root: Document, options: HtmlTagOptions) {
+	public constructor(parser: IParser, rawContent: string, options: HtmlTagOptions) {
 		const { rawTagName, tagName } = options.startTag;
 		super(
-			rawContent, root, {
+			parser, rawContent, {
 				rawTagName,
 				...pick(options, ['attrList'])
 			}
@@ -49,7 +49,7 @@ export class HtmlTag extends AttrAbleTag implements IParentNode<Node> {
 			}
 			this.endTag = options.endTag;
 		} else {
-			this.endTag = new ForceAddEndTag(tagName, root);
+			this.endTag = new ForceAddEndTag(tagName, parser);
 		}
 		if (!isAllowHtmlTag(tagName)) {
 			throw new Error(JSON.stringify(tagName) + 'is\'t a allowed html tag.');

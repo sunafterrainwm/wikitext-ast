@@ -64,3 +64,7 @@ export function normalParseOptions(rawOptions: ParseOptions): ParsedParseOptions
 
 	return options;
 }
+
+export interface IParser {
+	options: ParsedParseOptions;
+}

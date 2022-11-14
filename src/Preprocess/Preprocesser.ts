@@ -3,7 +3,7 @@ import assert = require('assert');
 import XRegExp = require('xregexp');
 
 import { strspn, strcspn } from '../lib/php';
-import { ParsedParseOptions } from '../models/ParseOptions';
+import { ParsedParseOptions } from '../models/IParser';
 import { NodeArray } from '../PPNode/NodeArray';
 import { NodeTree } from '../PPNode/NodeTree';
 import { mayPointGetText, mayPointPlus, Point } from '../PPNode/PointedNodeText';
@@ -687,6 +687,6 @@ export class Preprocessor {
 				}
 			}
 		}
-		return [['root', stack.rootAccum]];
+		return [['parser', stack.rootAccum]];
 	}
 }

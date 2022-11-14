@@ -1,39 +1,26 @@
 import { AbstractNode, IParentNode } from './AbstractNode';
+import { IParser } from './IParser';
 import { Node } from './Node';
 import { NodeCollection } from './NodeCollection';
-import { normalParseOptions, ParsedParseOptions, ParseOptions } from './ParseOptions';
 import { UnparsedWikitext } from './Wikitext';
 
-export class Document extends AbstractNode<true> implements IParentNode<Node> {
+export class Document extends AbstractNode implements IParentNode<Node> {
 	public children: NodeCollection;
 	public get hasChildren(): boolean {
 		return !!this.children.length;
 	}
 
-	public readonly options: ParsedParseOptions;
-
-	public constructor(rawContent: string, protected readonly rawOptions: ParseOptions) {
-		super(rawContent, undefined);
-		this.options = normalParseOptions(rawOptions);
+	public constructor(parser: IParser, rawContent: string) {
+		super(parser, rawContent);
 		this.children = new NodeCollection();
 		if (rawContent !== '') {
-			this.children.push(new UnparsedWikitext(rawContent, this));
+			this.children.push(new UnparsedWikitext(parser, rawContent));
 		}
 	}
 
 	protected _waring: string[] = [];
 	public get waring(): string[] {
 		return this._waring.slice();
-	}
-
-	public mayThrowError(error: Error): void {
-		// This method will call when preparing this.options
-		// so this.options might be "undefined" in sometime
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		if (this.options?.strict ?? !!this.rawOptions.strict) {
-			throw error;
-		}
-		this._waring.push(error.message);
 	}
 }
 

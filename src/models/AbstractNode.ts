@@ -1,12 +1,12 @@
-import type { Document } from './Document';
+import { IParser } from './IParser';
 import type { NodeCollection } from './NodeCollection';
 
-export abstract class AbstractNode<ISRoot = false> {
-	public constructor(protected _rawContent: string, protected _root: ISRoot extends true ? undefined : Document) {
+export abstract class AbstractNode {
+	public constructor(protected _parser: IParser, protected _rawContent: string) {
 	}
 
-	public get root(): ISRoot extends true ? undefined : Document {
-		return this._root;
+	public get parser(): IParser {
+		return this._parser;
 	}
 
 	public get rawContent(): string {
@@ -18,7 +18,7 @@ export abstract class AbstractNode<ISRoot = false> {
 	}
 }
 
-export interface INode extends AbstractNode<boolean> { }
+export interface INode extends AbstractNode { }
 
 export interface IParentNode<N extends INode = AbstractNode> {
 	children: NodeCollection<N>;
@@ -28,11 +28,3 @@ export interface IParentNode<N extends INode = AbstractNode> {
 export interface IHiddenNode {
 	isHidden: true;
 }
-
-class NullNode extends AbstractNode<true> {
-	public constructor() {
-		super('', undefined);
-	}
-}
-
-export const nullNode = new NullNode();

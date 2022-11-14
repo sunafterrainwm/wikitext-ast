@@ -2,7 +2,7 @@ import { ArrayAble, pick } from '../util';
 
 import { IParentNode } from './AbstractNode';
 import { AttrList } from './Attr';
-import { Document } from './Document';
+import type { IParser } from './IParser';
 import { Node } from './Node';
 import { NodeCollection } from './NodeCollection';
 import { AttrAbleTag, PartialEndTag, PartialStartTag } from './Tag';
@@ -23,9 +23,9 @@ export abstract class AbstractExtensionTag extends AttrAbleTag implements IParen
 	public startTag: PartialStartTag;
 	public endTag: PartialEndTag;
 
-	public constructor(rawContent: string, root: Document, options: ExtensionTagOptions) {
+	public constructor(parser: IParser, rawContent: string, options: ExtensionTagOptions) {
 		super(
-			rawContent, root, {
+			parser, rawContent, {
 				rawTagName: options.startTag.rawTagName,
 				...pick(options, ['attrList'])
 			}
@@ -42,30 +42,30 @@ export class NormalExtensionTag extends AbstractExtensionTag {
 export class EscapedExtensionTag extends AbstractExtensionTag implements IParentNode<EscapedWikitext> {
 	public override children!: NodeCollection<EscapedWikitext>;
 
-	public constructor(rawContent: string, root: Document, options: ExtensionTagOptions) {
-		super(rawContent, root, {
+	public constructor(parser: IParser, rawContent: string, options: ExtensionTagOptions) {
+		super(parser, rawContent, {
 			...options,
 			children: Array.from(options.children ?? []).map(function (node) {
-				return new EscapedWikitext(node, root);
+				return new EscapedWikitext(node, parser);
 			})
 		});
 	}
 }
 
-export function makeExtensionTag(rawContent: string, root: Document, options: ExtensionTagOptions): AbstractExtensionTag {
+export function makeExtensionTag(parser: IParser, rawContent: string, options: ExtensionTagOptions): AbstractExtensionTag {
 	const { tagName } = options.startTag;
 	if (options.endTag.tagName !== tagName) {
 		throw new Error('TagName of startTag (' + JSON.stringify(tagName) + ') and endTag (' + JSON.stringify(options.endTag.tagName) + ') must be match.');
 	}
 
-	if (!root.options.extraExtensionTags.has(tagName)) {
+	if (!parser.options.extraExtensionTags.has(tagName)) {
 		throw new Error('ExtensionTag ' + JSON.stringify(tagName) + ' isn\'t exist.');
 	}
 
-	if (root.options.extraExtensionTags.get(tagName)?.isEscapeTag) {
-		return new EscapedExtensionTag(rawContent, root, options);
+	if (parser.options.extraExtensionTags.get(tagName)?.isEscapeTag) {
+		return new EscapedExtensionTag(parser, rawContent, options);
 	} else {
-		return new NormalExtensionTag(rawContent, root, options);
+		return new NormalExtensionTag(parser, rawContent, options);
 	}
 }
 

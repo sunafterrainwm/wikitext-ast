@@ -1,10 +1,10 @@
 import type { ArrayAble } from '../util';
 
-import { AbstractNode, IHiddenNode, nullNode } from './AbstractNode';
+import { AbstractNode, IHiddenNode } from './AbstractNode';
 import { AttrList } from './Attr';
-import type { Document } from './Document';
 import { makeExtensionTag } from './ExtensionTag';
 import { HtmlTag, isAllowHtmlTag } from './HtmlTag';
+import type { IParser } from './IParser';
 import type { Node } from './Node';
 import { NodeCollection } from './NodeCollection';
 import { EscapedWikitext } from './Wikitext';
@@ -21,8 +21,8 @@ export interface TagOptions {
 export abstract class AbstractTag extends AbstractNode {
 	public rawTagName: string;
 
-	public constructor(rawContent: string, root: Document, options: TagOptions) {
-		super(rawContent, root);
+	public constructor(parser: IParser, rawContent: string, options: TagOptions) {
+		super(parser, rawContent);
 		this.rawTagName = options.rawTagName;
 	}
 
@@ -37,10 +37,10 @@ export interface AttrAbleTagOptions extends TagOptions {
 export abstract class AttrAbleTag extends AbstractTag {
 	public attrList: AttrList;
 
-	public constructor(rawContent: string, root: Document, options: AttrAbleTagOptions) {
-		super(rawContent, root, options);
+	public constructor(parser: IParser, rawContent: string, options: AttrAbleTagOptions) {
+		super(parser, rawContent, options);
 
-		this.attrList = options.attrList ?? new AttrList('', root, {});
+		this.attrList = options.attrList ?? new AttrList(parser, '', {});
 	}
 
 	public get rawAttrList(): string {
@@ -58,8 +58,8 @@ export class SelfCloseTag extends AttrAbleTag {
 }
 
 export class ForceAddEndTag extends PartialEndTag {
-	public constructor(tagName: string, root: Document) {
-		super('', root, { rawTagName: tagName });
+	public constructor(tagName: string, parser: IParser) {
+		super(parser, '', { rawTagName: tagName });
 	}
 }
 
@@ -67,26 +67,26 @@ export class DeleteAbleEndTag extends PartialEndTag implements IHiddenNode {
 	public readonly isHidden = true as const;
 
 	public constructor(base: PartialEndTag);
-	public constructor(rawContent: string, root: Document, options: TagOptions);
-	public constructor(rawContent: string | PartialEndTag, root?: Document, options?: TagOptions) {
-		let pRawContent: string, pRoot: Document, pOptions: TagOptions;
-		if (typeof rawContent === 'string') {
-			pRawContent = rawContent;
+	public constructor(parser: IParser, rawContent: string, options: TagOptions);
+	public constructor(parser: IParser | PartialEndTag, rawContent?: string, options?: TagOptions) {
+		let pRawContent: string, pParser: IParser, pOptions: TagOptions;
+		if (parser instanceof PartialEndTag || rawContent === undefined) {
+			pParser = (parser as PartialEndTag).parser;
+			pRawContent = (parser as PartialEndTag).rawContent;
+			pOptions = options ?? (parser as PartialEndTag);
+		} else {
+			pParser = parser;
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			pRoot = root!;
+			pRawContent = rawContent!;
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			pOptions = options!;
-		} else {
-			pRawContent = rawContent.rawContent;
-			pRoot = root ?? rawContent.root;
-			pOptions = options ?? rawContent;
 		}
-		super(pRawContent, pRoot, pOptions);
+		super(pParser, pRawContent, pOptions);
 	}
 }
 
 export function mergeTag(
-	root: Document,
+	parser: IParser,
 	startTag: PartialStartTag,
 	endTag?: PartialEndTag,
 	attrList?: AttrList,
@@ -97,27 +97,27 @@ export function mergeTag(
 		throw new Error('TagName of startTag (' + JSON.stringify(tagName) + ') and endTag (' + JSON.stringify(endTag.tagName) + ') must be match.');
 	}
 
-	const rawContent = startTag.rawContent + new NodeCollection(children).toString() + (endTag ?? nullNode).rawContent;
+	const rawContent = startTag.rawContent + new NodeCollection(children).toString() + (endTag?.rawContent ?? '');
 
 	const collect = new NodeCollection();
-	if (endTag && root.options.extraExtensionTags.has(tagName)) {
+	if (endTag && parser.options.extraExtensionTags.has(tagName)) {
 		// tagName is a valid extension tag name
 		// and endTag is exist.
 		// Building a Extension tag
-		collect.push(makeExtensionTag(rawContent, root, { startTag, endTag, attrList, children }));
+		collect.push(makeExtensionTag(parser, rawContent, { startTag, endTag, attrList, children }));
 	} else if (isAllowHtmlTag(tagName)) {
 		// tagName is a valid html tag name
 		// Building a Html tag
-		collect.push(new HtmlTag(rawContent, root, { startTag, endTag, attrList, children }));
+		collect.push(new HtmlTag(parser, rawContent, { startTag, endTag, attrList, children }));
 	} else {
 		// Isn't valid.
 		// escape and ignore those tag.
-		collect.push(new EscapedWikitext(startTag, root));
+		collect.push(new EscapedWikitext(startTag, parser));
 		if (children) {
 			collect.concatInto(children);
 		}
 		if (endTag) {
-			collect.push(new EscapedWikitext(endTag, root));
+			collect.push(new EscapedWikitext(endTag, parser));
 		}
 	}
 	return collect;

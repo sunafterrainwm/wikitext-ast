@@ -1,11 +1,11 @@
 import { AbstractNode, INode } from './AbstractNode';
-import { Document } from './Document';
+import { IParser } from './IParser';
 
 export type ValidTagName = string;
 
 export abstract class AbstractWikitext extends AbstractNode {
-	public constructor(rawContent: string, root: Document) {
-		super(rawContent, root);
+	public constructor(parser: IParser, rawContent: string) {
+		super(parser, rawContent);
 	}
 }
 
@@ -13,8 +13,8 @@ export class UnparsedWikitext extends AbstractWikitext {
 }
 
 export class EscapedWikitext extends AbstractWikitext {
-	public constructor(parent: INode, root: Document) {
-		super(parent.rawContent, root);
+	public constructor(parent: INode, parser: IParser) {
+		super(parser, parent.rawContent);
 	}
 }
 

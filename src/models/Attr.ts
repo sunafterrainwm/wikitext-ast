@@ -1,7 +1,7 @@
 import { ArrayAble } from '../util';
 
 import { AbstractNode } from './AbstractNode';
-import { Document } from './Document';
+import type { IParser } from './IParser';
 import type { Node } from './Node';
 import { NodeCollection } from './NodeCollection';
 
@@ -13,8 +13,8 @@ export class Attr extends AbstractNode {
 	public name: string | Node;
 	public value: string | Node;
 
-	public constructor(rawContent: string, root: Document, options: AttrOptions) {
-		super(rawContent, root);
+	public constructor(parser: IParser, rawContent: string, options: AttrOptions) {
+		super(parser, rawContent);
 		this.name = options.name;
 		this.value = options.value;
 	}
@@ -26,8 +26,8 @@ export interface AttrListOptions {
 export class AttrList extends AbstractNode {
 	public attrList: NodeCollection<Attr>;
 
-	public constructor(rawContent: string, root: Document, options: AttrListOptions) {
-		super(rawContent, root);
+	public constructor(parser: IParser, rawContent: string, options: AttrListOptions) {
+		super(parser, rawContent);
 		this.attrList = new NodeCollection(options.attrs);
 	}
 }
